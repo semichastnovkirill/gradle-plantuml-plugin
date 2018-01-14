@@ -16,45 +16,31 @@ import java.nio.file.Paths
  */
 class RenderPlantUmlTask extends DefaultTask {
 
-    def Path assetsPath = Paths.get(project.plantuml.sourcePath)
-    def Path buildPath = Paths.get(project.plantuml.buildPath)
-
-    RenderPlantUmlTask() {
-        if(Files.exists(assetsPath)) {
-            for (Path puml : Files.newDirectoryStream(assetsPath, '*.puml')) {
-                inputs.file puml.toFile()
-            }
-
-            for (Path puml : Files.newDirectoryStream(assetsPath, '*.puml')) {
-                outputs.file getDestination(puml.toFile(), project.plantuml.fileFormat.getFileSuffix()).toFile()
-            }
-        }
-    }
-
-    Path getDestination(File puml, String extension) {
-        String baseName = FilenameUtils.getBaseName(puml.name)
-        String destName = "${baseName}"
-        buildPath.resolve(destName + extension)
-    }
-
     @TaskAction
     def render() {
-        println "assetsPath ${assetsPath}"
-        println "Files.exists(assetsPath) ${Files.exists(assetsPath)}"
-        println "sourcePath ${project.plantuml.sourcePath}"
-
         Path projectPath = project.projectDir.toPath()
+        Path assetsPath = projectPath.resolve(Paths.get(project.plantuml.sourcePath))
+        Path buildPath = projectPath.resolve(Paths.get(project.plantuml.buildPath))
 
-        for (File puml : inputs.files) {
-            String relPumlPath = projectPath.relativize(puml.toPath()).toString()
-            String pumlContent = new String(Files.readAllBytes(puml.toPath()), 'UTF-8')
+        println "projectPath ${projectPath}"
+        println "assetsPath ${assetsPath}"
+        println "buildPath ${buildPath}"
+
+        for (Path puml : Files.newDirectoryStream(assetsPath, '*.puml')) {
+            String pumlContent = new String(Files.readAllBytes(puml), 'UTF-8')
 
             SourceStringReader reader
 
             reader = new SourceStringReader(pumlContent)
-            Path destPath = getDestination(puml, project.plantuml.fileFormat.getFileSuffix())
-            println "Rendering ${relPumlPath} to ${projectPath.relativize(destPath)}"
+            Path destPath = getDestination(puml.toFile(), project.plantuml.fileFormat.getFileSuffix(), buildPath)
+            println "Rendering ${puml.toString()} to ${projectPath.relativize(destPath)}"
             reader.generateImage(new FileOutputStream(destPath.toFile()), new FileFormatOption(project.plantuml.fileFormat))
         }
+    }
+
+    Path getDestination(File puml, String extension, Path buildPath) {
+        String baseName = FilenameUtils.getBaseName(puml.name)
+        String destName = "${baseName}"
+        buildPath.resolve(destName + extension)
     }
 }

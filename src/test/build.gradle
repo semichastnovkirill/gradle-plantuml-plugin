@@ -4,7 +4,7 @@ buildscript {
         mavenCentral() // for PlantUML itself
     }
     dependencies {
-        classpath 'com.github.dirkraft.gradle:gradle-plantuml-plugin:0.0.1-SNAPSHOT'
+        classpath 'org.communis.semichastnovkirill.gradle:gradle-plantuml-plugin:0.0.1-SNAPSHOT'
     }
 }
 

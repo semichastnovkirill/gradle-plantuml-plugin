@@ -1,22 +1,48 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+}
+
+plugins {
+    id "java"
+    id "groovy"
+    id "idea"
+    id "signing"
+    id "com.github.hierynomus.license" version "0.14.0"
+    id "nebula.release" version "6.0.2"
+    id "nebula.maven-base-publish" version "5.1.0"
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Dependencies
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile gradleApi()
+    compile 'org.codehaus.groovy:groovy:2.4.2'
+    compile 'commons-io:commons-io:2.4'
+    compile 'net.sourceforge.plantuml:plantuml:8059'
+}
+
+uploadArchives {
+    enabled = true
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Settings
 ext {
     // Project constants
-    github_org = 'dirkraft'
-    project_group = 'com.github.dirkraft.gradle'
-    project_name = 'gradle-plantuml-plugin'
-    project_version = '0.0.2-SNAPSHOT'
+    github_org = 'semichastnovkirill'
+    project_group = artifactGroup
+    project_name = artifactName
+    project_version = '0.0.1-SNAPSHOT'
     project_description = 'Renders PlantUML to image files'
-    project_jdk = '1.7'
-
-    /*
-     * Dependencies can be named so that sub-projects can reference consistent version of them.
-     * dependencies {
-     *     compile deps['guava']
-     * }
-     */
-    deps = [
-    ]
+    project_jdk = '1.8'
+    isReleaseVersion = !project_version.endsWith("SNAPSHOT")
 
     /*
      * Fine tune the POM contents here, particularly, the developers section. Some defaulting behavior is provided
@@ -44,8 +70,8 @@ ext {
         }
         developers {
             developer {
-                id 'dirkraft'
-                name 'Jason Dunkelberger'
+                id 'semichastnovkirill'
+                name 'Kirill Semichastnov'
             }
         }
     }
@@ -69,184 +95,76 @@ ext {
             ''
         }
     }
-
 }
 
-
-buildscript {
-    repositories {
-        jcenter()
-    }
-
-    dependencies {
-        classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.11.0'
-    }
-}
-
-allprojects {
-    apply plugin: 'idea'
-    apply plugin: 'license'
-}
-
-subprojects {
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Identifiers
-
-    group = project_group
-    version = project_version
-    ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Plugins
-
-    apply plugin: 'groovy'
-    sourceCompatibility = project_jdk
-    targetCompatibility = project_jdk
-
-    apply plugin: 'maven'
-    apply plugin: 'signing'
-    apply plugin: 'idea'
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // License
-
-    license {
-        header rootProject.file('src/license/HEADER')
-    }
-
-    assemble {
-        dependsOn licenseFormatMain, licenseFormatTest
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Dependencies
-
-    repositories {
-        mavenCentral()
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Artifacts
-
-    jar {
-        doFirst {
-            // Timestamp changes on every build. By evaluating it later, won't needlessly fail up-to-date checks.
-            manifest = defaultManifest()
-        }
-    }
-
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
-        from 'build/docs/javadoc'
-        doFirst {
-            // Timestamp changes on every build. By evaluating it later, won't needlessly fail up-to-date checks.
-            manifest = defaultManifest()
-        }
-    }
-
-    task sourcesJar(type: Jar) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-        doFirst {
-            // Timestamp changes on every build. By evaluating it later, won't needlessly fail up-to-date checks.
-            manifest = defaultManifest()
-        }
-    }
-
-    artifacts {
-        archives jar
-        archives javadocJar
-        archives sourcesJar
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Publishing
-
-    assemble {
-        dependsOn licenseFormatMain, licenseFormatTest
-    }
-
-    signing {
-        required { isReleaseVersion && gradle.taskGraph.hasTask("uploadArchives") }
-        sign configurations.archives
-    }
-
-    uploadArchives {
-        dependsOn licenseFormatMain, licenseFormatTest
-        enabled = false // by default. Mark individual projects back to true for inclusion in publishing.
-
-        repositories.mavenDeployer {
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-            //# ./gradlew -PdeployUrl=http://server/artifactory/repo -PdeployUser=admin -PdeployPass=pass uploadArchives
-            // for snapshots https://oss.sonatype.org/content/repositories/snapshots
-            // for staging/release https://oss.sonatype.org/service/local/staging/deploy/maven2
-            repository(
-                    url: defaultBlank({ deployUrl })
-            ) {
-                // If these are not defined assemble needlessly fails for unrelated tasks, hence, defaultBlank.
-                authentication(userName: defaultBlank({ deployUser }), password: defaultBlank({ deployPass }))
-            }
-
-            pom.project project_pom
-        }
-    }
-}
+group = artifactGroup
+sourceCompatibility = project_jdk
+targetCompatibility = project_jdk
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Automatics (a.k.a. Ugly-But-Useful stuff)
+// License
 
-// Create placeholder if this is a brand new project.
-boolean createdLicenseDir = rootProject.file('src/license').mkdirs()
-createdLicenseDir && logger.info('Created src/license/')
-boolean createdLicensePlaceholder = rootProject.file('src/license/HEADER').createNewFile()
-createdLicensePlaceholder && logger.info('Created src/license/HEADER placeholder')
-
-// Create and maintain settings.gradle rootProject.name
-import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.util.regex.Pattern
-
-def settingsPath = rootProject.file('settings.gradle').toPath()
-def settingsRootProjectName = "rootProject.name = '${project_name}'" + System.getProperty("line.separator")
-if (settingsPath.toFile().exists()) {
-    // Make sure name is in sync with project constants.
-    def settings = new String(Files.readAllBytes(settingsPath), StandardCharsets.UTF_8)
-    if (!settings.contains(settingsRootProjectName)) {
-        def matcher = Pattern.compile('\\s*rootProject\\.name\\s*=\\s*[^\\s]+').matcher(settings)
-        if (matcher.find()) {
-            def sb = new StringBuffer();
-            matcher.appendReplacement(sb, settingsRootProjectName).appendTail(sb)
-            settings = sb.toString()
-        } else {
-            settings = settingsRootProjectName + System.getProperty("line.separator") + settings
-        }
-        Files.write(settingsPath, settings.getBytes(StandardCharsets.UTF_8))
-        logger.info('Updated settings.gradle with current ext.project_name which is ${project_name}')
-    }
-} else {
-    // Create settings.gradle if this is a brand new project. This is also the only way I know of (which is to do it in
-    // settings.gradle) to set an explicit name, rather than infer it from the title of the root directory.
-    Files.write(settingsPath, settingsRootProjectName.getBytes(StandardCharsets.UTF_8))
-    logger.info('Created settings.gradle with ${settingsRootProjectName}')
+license {
+    header rootProject.file('LICENSE')
 }
 
-// Touch build.gradle files for all projects. Convenient when adding new modules.
-subprojects {
-    project.projectDir.mkdirs()
-    def projectBuildGradleFile = project.file('build.gradle')
-    if (!projectBuildGradleFile.exists()) {
-        projectBuildGradleFile.createNewFile()
+assemble {
+    dependsOn licenseFormatMain, licenseFormatTest
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Artifacts
+
+jar {
+    doFirst {
+        // Timestamp changes on every build. By evaluating it later, won't needlessly fail up-to-date checks.
+        manifest = defaultManifest()
     }
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from 'build/docs/javadoc'
+    doFirst {
+        // Timestamp changes on every build. By evaluating it later, won't needlessly fail up-to-date checks.
+        manifest = defaultManifest()
+    }
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+    doFirst {
+        // Timestamp changes on every build. By evaluating it later, won't needlessly fail up-to-date checks.
+        manifest = defaultManifest()
+    }
+}
+
+artifacts {
+    archives jar
+    archives javadocJar
+    archives sourcesJar
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Publishing
+
+assemble {
+    dependsOn licenseFormatMain, licenseFormatTest
+}
+
+signing {
+    required { isReleaseVersion && gradle.taskGraph.hasTask("uploadArchives") }
+    sign configurations.archives
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Misc
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.3'
-    distributionUrl = 'https://services.gradle.org/distributions/gradle-2.3-all.zip'
+    gradleVersion = '3.5'
+    distributionUrl = "https://services.gradle.org/distributions/gradle-${gradleVersion}-all.zip"
 }
 
 idea {

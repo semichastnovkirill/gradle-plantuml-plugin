@@ -1,10 +1,10 @@
 buildscript {
     repositories {
-        mavenLocal() // for installed gradle-plantuml-plugin
+        mavenLocal() // for installed org-plantuml-plugin
         mavenCentral() // for PlantUML itself
     }
     dependencies {
-        classpath 'org.communis.semichastnovkirill.gradle:gradle-plantuml-plugin:0.0.1-SNAPSHOT'
+        classpath 'org.communis.semichastnovkirill.org:org-plantuml-plugin:0.0.1-SNAPSHOT'
     }
 }
 

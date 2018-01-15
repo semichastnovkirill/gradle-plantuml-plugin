@@ -30,14 +30,14 @@ dependencies {
     testCompile 'junit:junit:4.12'
 }
 
-uploadArchives {
-    enabled = true
-}
+//uploadArchives {
+//    enabled = true
+//}
 
 gradlePlugin {
     plugins {
-        javaPrototypeHelper {
-            id = 'PlantUml'
+        PlantUmlPlugin {
+            id = 'org.communis.plant-uml'
             implementationClass = 'org.communis.semichastnovkirill.gradle.PlantUmlPlugin'
         }
     }
@@ -170,6 +170,7 @@ publishing {
 
     repositories {
         maven {
+            name 'nebula'
             if(project.version.toString().endsWith('-SNAPSHOT')
                     || project.version.toString().contains('-dev')) {
                 url "${deployUrl}${repoSnapshots}"

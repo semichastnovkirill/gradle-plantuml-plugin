@@ -22,10 +22,6 @@ class RenderPlantUmlTask extends DefaultTask {
         Path assetsPath = projectPath.resolve(Paths.get(project.plantuml.sourcePath))
         Path buildPath = projectPath.resolve(Paths.get(project.plantuml.buildPath))
 
-        println "projectPath ${projectPath}"
-        println "assetsPath ${assetsPath}"
-        println "buildPath ${buildPath}"
-
         for (Path puml : Files.newDirectoryStream(assetsPath, '*.puml')) {
             String pumlContent = new String(Files.readAllBytes(puml), 'UTF-8')
 
@@ -33,7 +29,10 @@ class RenderPlantUmlTask extends DefaultTask {
 
             reader = new SourceStringReader(pumlContent)
             Path destPath = getDestination(puml.toFile(), project.plantuml.fileFormat.getFileSuffix(), buildPath.resolve(assetsPath.relativize(puml.getParent())))
-            if(!destPath.getParent().toFile().exists()) destPath.getParent().toFile().mkdirs()
+            if(!destPath.getParent().toFile().exists())
+                if(!destPath.getParent().toFile().mkdirs())
+                    System.err.println("mkdirs fail: ${destPath.getParent()}")
+
             println "Rendering ${puml.toString()} to ${projectPath.relativize(destPath)}"
             reader.generateImage(new FileOutputStream(destPath.toFile()), new FileFormatOption(project.plantuml.fileFormat))
         }

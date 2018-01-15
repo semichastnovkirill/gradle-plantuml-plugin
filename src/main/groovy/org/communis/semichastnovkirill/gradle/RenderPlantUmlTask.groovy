@@ -32,13 +32,15 @@ class RenderPlantUmlTask extends DefaultTask {
             SourceStringReader reader
 
             reader = new SourceStringReader(pumlContent)
-            Path destPath = getDestination(puml.toFile(), project.plantuml.fileFormat.getFileSuffix(), buildPath)
+            Path destPath = getDestination(puml.toFile(), project.plantuml.fileFormat.getFileSuffix(), buildPath.resolve(assetsPath.relativize(puml.getParent())))
+            if(!destPath.getParent().toFile().exists()) destPath.getParent().toFile().mkdirs()
             println "Rendering ${puml.toString()} to ${projectPath.relativize(destPath)}"
             reader.generateImage(new FileOutputStream(destPath.toFile()), new FileFormatOption(project.plantuml.fileFormat))
         }
     }
 
     Path getDestination(File puml, String extension, Path buildPath) {
+        puml.getParent()
         String baseName = FilenameUtils.getBaseName(puml.name)
         String destName = "${baseName}"
         buildPath.resolve(destName + extension)

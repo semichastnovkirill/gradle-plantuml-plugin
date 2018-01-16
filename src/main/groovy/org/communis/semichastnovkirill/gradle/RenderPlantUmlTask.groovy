@@ -10,6 +10,7 @@ import org.gradle.api.tasks.TaskAction
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.stream.Collectors
 
 /**
  * Created by simon on 14.01.2018.
@@ -22,7 +23,7 @@ class RenderPlantUmlTask extends DefaultTask {
         Path assetsPath = projectPath.resolve(Paths.get(project.plantuml.sourcePath))
         Path buildPath = projectPath.resolve(Paths.get(project.plantuml.buildPath))
 
-        for (Path puml : Files.newDirectoryStream(assetsPath, '*.puml')) {
+        for (Path puml : Files.newDirectoryStream(assetsPath, '**/*.puml')) {
             String pumlContent = new String(Files.readAllBytes(puml), 'UTF-8')
 
             SourceStringReader reader

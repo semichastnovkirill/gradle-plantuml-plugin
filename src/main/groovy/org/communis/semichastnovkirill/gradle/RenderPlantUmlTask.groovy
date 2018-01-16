@@ -11,6 +11,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.stream.Collectors
+import java.util.stream.Stream
 
 /**
  * Created by simon on 14.01.2018.
@@ -23,19 +24,21 @@ class RenderPlantUmlTask extends DefaultTask {
         Path assetsPath = projectPath.resolve(Paths.get(project.plantuml.sourcePath))
         Path buildPath = projectPath.resolve(Paths.get(project.plantuml.buildPath))
 
-        for (Path puml : Files.newDirectoryStream(assetsPath, '**/*.puml')) {
-            String pumlContent = new String(Files.readAllBytes(puml), 'UTF-8')
+        new File(assetsPath).eachDirRecurse() { dir ->
+            dir.eachFileMatch(~/.*.puml/) { file ->
+                String pumlContent = new String(Files.readAllBytes(file.toPath()), 'UTF-8')
 
-            SourceStringReader reader
+                SourceStringReader reader
 
-            reader = new SourceStringReader(pumlContent)
-            Path destPath = getDestination(puml.toFile(), project.plantuml.fileFormat.getFileSuffix(), buildPath.resolve(assetsPath.relativize(puml.getParent())))
-            if(!destPath.getParent().toFile().exists())
-                if(!destPath.getParent().toFile().mkdirs())
-                    System.err.println("mkdirs fail: ${destPath.getParent()}")
+                reader = new SourceStringReader(pumlContent)
+                Path destPath = getDestination(file, project.plantuml.fileFormat.getFileSuffix(), buildPath.resolve(assetsPath.relativize(file.toPath().getParent())))
+                if(!destPath.getParent().toFile().exists())
+                    if(!destPath.getParent().toFile().mkdirs())
+                        System.err.println("mkdirs fail: ${destPath.getParent()}")
 
-            println "Rendering ${puml.toString()} to ${projectPath.relativize(destPath)}"
-            reader.generateImage(new FileOutputStream(destPath.toFile()), new FileFormatOption(project.plantuml.fileFormat))
+                println "Rendering ${file.toPath().toString()} to ${projectPath.relativize(destPath)}"
+                reader.generateImage(new FileOutputStream(destPath.toFile()), new FileFormatOption(project.plantuml.fileFormat))
+            }
         }
     }
 

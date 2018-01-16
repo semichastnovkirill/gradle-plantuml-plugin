@@ -24,7 +24,7 @@ class RenderPlantUmlTask extends DefaultTask {
         Path assetsPath = projectPath.resolve(Paths.get(project.plantuml.sourcePath))
         Path buildPath = projectPath.resolve(Paths.get(project.plantuml.buildPath))
 
-        new File(assetsPath).eachDirRecurse() { dir ->
+        assetsPath.toFile().eachDirRecurse() { dir ->
             dir.eachFileMatch(~/.*.puml/) { file ->
                 String pumlContent = new String(Files.readAllBytes(file.toPath()), 'UTF-8')
 
